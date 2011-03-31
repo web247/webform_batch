@@ -70,16 +70,7 @@ function webform_batch_form_display($node) {
   return $output;
 }
 
-function webform_batch_form($form_state, $node) {
-  $result = db_query("SELECT n.* FROM {node} n WHERE n.type = 'contest' AND nid = %d", $node->nid);
-  $nodes = db_fetch_object($result);
-
-  $form['title'] = array(
-    '#type' => 'markup',
-    '#prefix' => '<p><i>Export the submissions for this webform:</i><br><b>',
-    '#value' => $nodes->title,
-    '#suffix' => '</b></p>'
-  );
+function webform_batch_form(&$form_state, $node) {
   $form['nid'] = array(
     '#type' => 'hidden',
     '#value' => $node->nid,
@@ -87,7 +78,7 @@ function webform_batch_form($form_state, $node) {
 
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => 'Submit'
+    '#value' => t('Start Batch Export'),
   );
   
   return $form;
@@ -98,21 +89,20 @@ function webform_batch_form_submit($form, &$form_state) {
     'operations' => array(),
     'finished' => 'webform_batch_finished',
     'title' => t('Webform Results Batching'),
-    'init_message' => t('Starting...'),
+    'init_message' => t('Starting ...'),
     'progress_message' => t('Batch @current out of @total'),
     'error_message' => t('An error occurred and some or all of the batch has failed.'),
   );
+  
   $batch['operations'][] = array('webform_batch_generate_csv', array($form_state['values']['nid']));
+  
   // Let the batch system know there is a job to process
   batch_set($batch);  
 }
 
 function webform_batch_generate_csv($nid, &$context) {
   $node = node_load($nid);
-
-print_r($node);
-break;
-
+  
   // Set up the CSV header
   $header = array(t('Serial'), t('SID'), t('Time'), t('IP Address'), t('UID'), t('Username'));
   $field_count = 0;

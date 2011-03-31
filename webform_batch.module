@@ -12,43 +12,28 @@ function webform_batch_menu() {
   return array(
     'admin/settings/webform/batch' => array(
       'title' => 'Webform Batch Settings',
-      'description' => 'Example for testing batch processing.',
+      'description' => t('Example for testing batch processing.'),
       'page callback' => 'webform_batch_settings_form_display',
       'access arguments' => array('access all webform results'),
       'type' => MENU_NORMAL_ITEM,
     ),
-    'node/%webform_batch/batch' => array(
-      'title' => 'Export',
-      'description' => t('Choose random result'),
+    'node/%webform_menu/webform-results/batch_export' => array(
+      'title' => 'Batch Export',
+      'description' => t('Batch export webform results'),
       'page callback' => 'drupal_get_form',
       'page arguments' => array('webform_batch_form', 1),
       'access arguments' => array('access all webform results'),
       'type' => MENU_LOCAL_TASK,
-      'weight' => 10,
+      'weight' => 8,
     ),
     'admin/content/webform/batch' => array(
       'title' => 'Webform Batches',
-      'description' => 'Example for testing batch processing.',
+      'description' => t('Example for testing batch processing.'),
       'page callback' => 'webform_batch_form_display',
       'access arguments' => array('access all webform results'),
       'type' => MENU_NORMAL_ITEM,
     )
   );
-}
-
-/**
- * Menu Callback: Contest Webform.
- */
-function webform_batch_load($nid) {
-  if ( is_numeric($nid) ) {
-    $node = node_load($nid);
-
-    if ( $node->type == 'contest' ) {
-      return $node;
-    }
-  }
-
-  return FALSE;
 }
 
 /* Start the functions for the SETTINGS form */

@@ -2,6 +2,7 @@
 name            = "Webform Batch"
 description     = "Provides batch exporting for Webform results."
 core            = "6.x"
+package         = "Webform"
 
 version         = "6.x-1.0"
 

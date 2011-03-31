@@ -14,7 +14,7 @@ function webform_batch_admin_settings_form() {
   $form['webform_batch_number_results'] = array(
     '#type' => 'textfield',
     '#title' => t('Number of results to export at once'),
-    '#default_value' => variable_get('webform_batch_number_results', 1000),
+    '#default_value' => variable_get('webform_batch_number_results', 200),
   );
   
   return system_settings_form($form);

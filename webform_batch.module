@@ -71,7 +71,7 @@ function webform_batch_form_submit($form, &$form_state) {
       array('webform_batch_export_csv', array($form_state['values']['nid'], $form_state['values']['number_results'])),
     ),
     'finished' => 'webform_batch_finished',
-    'title' => t('Webform Results Batching'),
+    'title' => t('Exporting Webform results'),
     'init_message' => t('Starting ...'),
     'error_message' => t('An error occurred and some or all of the batch has failed.'),
     'file' => drupal_get_path('module', 'webform_batch') . '/webform_batch.batch.inc',

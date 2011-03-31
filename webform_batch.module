@@ -26,13 +26,6 @@ function webform_batch_menu() {
       'type' => MENU_LOCAL_TASK,
       'weight' => 8,
     ),
-    'admin/content/webform/batch' => array(
-      'title' => 'Webform Batches',
-      'description' => t('Example for testing batch processing.'),
-      'page callback' => 'webform_batch_form_display',
-      'access arguments' => array('access all webform results'),
-      'type' => MENU_NORMAL_ITEM,
-    )
   );
 }
 

@@ -11,8 +11,6 @@
 function webform_batch_export_csv($nid, $limit, &$context) {
   $node = node_load($nid);
   
-  $limit = 200;
-  
   // Processing hasn't started, initialize sandbox.
   if ( !isset($context['sandbox']['progress']) ) {
     $context['sandbox']['progress'] = 0;

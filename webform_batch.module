@@ -1,4 +1,13 @@
 <?php
+
+/**
+ * @file
+ * Provides batch exporting for Webform results.
+ */
+
+/**
+ * Implements hook_menu().
+ */
 function webform_batch_menu() {
   $items = array();
   

@@ -10,13 +10,6 @@
  */
 function webform_batch_menu() {
   return array(
-    'admin/settings/webform/batch' => array(
-      'title' => 'Webform Batch Settings',
-      'description' => t('Example for testing batch processing.'),
-      'page callback' => 'webform_batch_settings_form_display',
-      'access arguments' => array('access all webform results'),
-      'type' => MENU_NORMAL_ITEM,
-    ),
     'node/%webform_menu/webform-results/batch_export' => array(
       'title' => 'Batch Export',
       'description' => t('Batch export webform results'),
@@ -26,56 +19,41 @@ function webform_batch_menu() {
       'type' => MENU_LOCAL_TASK,
       'weight' => 8,
     ),
+    'admin/settings/webform/batch' => array(
+      'title' => 'Webform Batch Settings',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('webform_batch_admin_settings_form'),
+      'access arguments' => array('access all webform results'),
+      'type' => MENU_NORMAL_ITEM,
+      'file' => 'webform_batch.admin.inc',
+    ),
   );
 }
 
-/* Start the functions for the SETTINGS form */
-function webform_batch_settings_form_display() {
-  $output = drupal_get_form('webform_batch_settings_form');
-
-  return $output;
-}
-
-function webform_batch_settings_form() {
-  $form['number_results'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Number of results'),
-    '#description' => t('Enter the number of results.'),
-    '#default_value' => variable_get('number_results', $number_results),
-  );
-
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => 'Submit'
+/**
+ * Batch Export Form.
+ */
+function webform_batch_form(&$form_state, $node) {
+  $submissions = db_result(db_query("SELECT COUNT(*) FROM {webform_submissions} WHERE nid = %d", $node->nid));
+  
+  $form['submissions'] = array(
+    '#type' => 'markup',
+    '#prefix' => '<div class="submissions">',
+    '#suffix' => '</div>',
+    '#value' => $submissions,
   );
   
-  return $form;
-}
-
-function webform_batch_settings_form_submit($form, &$form_state) {
-  $number_results = $form['number_results']['#value'];
-
-  variable_set('number_results', $number_results);
-
-  drupal_set_message(t('The settings have been saved.'));
-  $form_state['redirect'] = 'admin/settings/webform/batch';
-  return; 
-}
-/* End the functions for the SETTINGS form */
-
-
-function webform_batch_form_display($node) {
-  $output = drupal_get_form('webform_batch_form');
-
-  return $output;
-}
-
-function webform_batch_form(&$form_state, $node) {
+  $form['number_results'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Number of results to export at once'),
+    '#default_value' => variable_get('webform_batch_number_results', 1000),
+  );
+  
   $form['nid'] = array(
     '#type' => 'hidden',
     '#value' => $node->nid,
   );
-
+  
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Start Batch Export'),
@@ -84,155 +62,20 @@ function webform_batch_form(&$form_state, $node) {
   return $form;
 }
 
+/**
+ * Submit Handler: Batch Export Form.
+ */
 function webform_batch_form_submit($form, &$form_state) {
   $batch = array(
-    'operations' => array(),
+    'operations' => array(
+      array('webform_batch_export_csv', array($form_state['values']['nid'], $form_state['values']['number_results'])),
+    ),
     'finished' => 'webform_batch_finished',
     'title' => t('Webform Results Batching'),
     'init_message' => t('Starting ...'),
-    'progress_message' => t('Batch @current out of @total'),
     'error_message' => t('An error occurred and some or all of the batch has failed.'),
+    'file' => drupal_get_path('module', 'webform_batch') . '/webform_batch.batch.inc',
   );
   
-  $batch['operations'][] = array('webform_batch_generate_csv', array($form_state['values']['nid']));
-  
-  // Let the batch system know there is a job to process
   batch_set($batch);  
-}
-
-function webform_batch_generate_csv($nid, &$context) {
-  $node = node_load($nid);
-  
-  // Set up the CSV header
-  $header = array(t('Serial'), t('SID'), t('Time'), t('IP Address'), t('UID'), t('Username'));
-  $field_count = 0;
-  // Compile header information.
-  //webform_load_components(); // Load all components.
-  foreach ($node->webform['components'] as $cid => $component) {
-    $csv_header_function = '_webform_csv_headers_'. $component['type'];
-    if (function_exists($csv_header_function)) {
-      // Let each component determine its headers.
-      $component_header = $csv_header_function($component, $component, $component);
-      $component_header[2] = check_plain(strip_tags($component_header[2]));
-      $header = array_merge($header, (array)$component_header[2]);
-      $field_count++;
-
-    }
-    $data = $submission->data[$cid]['value'][0];
-  }
-
-  $number_results = variable_get('number_results', $number_results);
-  if ($number_results > 0 )
-  {
-    $limit = $field_count * $number_results;	
-  } else
-	{
-		$limit = $field_count * 50;
-	}
-  
-
-  if (!$context['sandbox']['progress']) {
-    $fp = fopen ("/tmp/test.csv", "w");
-    fputcsv($fp, $header);
-    $context['sandbox']['progress'] = 1;
-    $context['sandbox']['step'] = 0;
-
-    $max_results = db_result(db_query('SELECT count(*) as count '.
-           'FROM {webform_submissions} s '.
-           'LEFT JOIN {webform_submitted_data} sd ON sd.sid = s.sid '.
-           'LEFT JOIN {users} u ON u.uid = s.uid '.
-           'WHERE sd.nid = %d', $nid));
-
-
-    $context['sandbox']['max'] = $max_results;
-    $context['sandbox']['row_count'] = 0;
-  }
-  else {
-    $fp = fopen ("/tmp/test.csv", "a");
-    $context['sandbox']['progress'] = $context['sandbox']['progress'] + 1;
-    $context['sandbox']['step'] = $context['sandbox']['step'] + 1;
-  }
-  $row = $context['sandbox']['step'] * $limit;
-
-  $query = 'SELECT s.*, sd.cid, sd.no, sd.data, u.name, u.mail, u.status '.
-           'FROM {webform_submissions} s '.
-           'LEFT JOIN {webform_submitted_data} sd ON sd.sid = s.sid '.
-           'LEFT JOIN {users} u ON u.uid = s.uid '.
-           'WHERE sd.nid = %d';
-  $query .= ' ORDER BY sid ASC, cid ASC, no ASC';  
-  $query .= ' LIMIT '.$row.','.$limit;
-
-  $res = db_query($query, $nid);
-  $submissions = array();
-  $previous = array();
-
-  // Outer loop: iterate for each submission.
-  $count = 0;
-  while ($row = db_fetch_object($res)) {
-    if ($row->sid != $context['sandbox']['previous']) {
-      $context['results']['submissions'][$row->sid] = new stdClass();
-      $context['results']['submissions'][$row->sid]->sid = $row->sid;
-      $context['results']['submissions'][$row->sid]->submitted = $row->submitted;
-      $context['results']['submissions'][$row->sid]->remote_addr = $row->remote_addr;
-      $context['results']['submissions'][$row->sid]->uid = $row->uid;
-      $context['results']['submissions'][$row->sid]->name = $row->name;
-      $context['results']['submissions'][$row->sid]->status = $row->status;
-    }
-    $context['results']['submissions'][$row->sid]->data[$row->cid]['value'][$row->no] = $row->data;
-    $context['sandbox']['previous'] = $row->sid;
-    $count++;
-
-  }
-
-  // Generate a row for each submission.
-  foreach ($context['results']['submissions'] as $sid => $submission) {
-    $row = array();
-    $row[] = ++$context['sandbox']['row_count'];
-    $row[] = $sid;
-    $row[] = format_date($submission->submitted, 'small');
-    $row[] = $submission->remote_addr;
-    $row[] = $submission->uid;
-    $row[] = $submission->name;
-
-    foreach ($node->webform['components'] as $cid => $component) {
-      $csv_data_function = '_webform_csv_data_'. $component['type'];
-      if (function_exists($csv_data_function)) {
-        // Let each component add its data.
-        $raw_data = isset($submission->data[$cid]) ? $submission->data[$cid] : NULL;
-        //$data = $csv_data_function($raw_data, $component);
-        //$data = $csv_data_function($component, $export_options, $raw_data);
-		$data = $submission->data[$cid]['value'][0];
-
-        if (is_array($data)) {
-          $row = array_merge($row, array_values($data));
-        }
-        else {
-          $row[] = $data;
-        }
-      }
-    }
-	
-	//dsm($row);
-	
-    // Write data from submissions.
-    fputcsv($fp, $row);
-    unset($context['results']['submissions']);
-  }
-
-  fclose($fp); 
-
-  
-  if(($context['sandbox']['progress'] * $limit) < $context['sandbox']['max']) {
-    $context['finished'] = ($context['sandbox']['progress'] * $limit) / $context['sandbox']['max'];
-  } else {
-    $context['finished'] = 1;
-  }
-}
-
-function webform_batch_finished($success, $results, $operations) {
-  $source = "/tmp/test.csv";
-
-  $dest = file_create_path()."/batch.csv";
-  copy($source, $dest);
-  drupal_set_message('Click <a href="/' . $dest . '">here</a> to download your results.');
 }

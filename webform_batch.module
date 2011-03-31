@@ -9,35 +9,32 @@
  * Implements hook_menu().
  */
 function webform_batch_menu() {
-  $items = array();
-  
-  $items['admin/settings/webform/batch'] = array(
-    'title' => 'Settings Webform Batches',
-    'description' => 'Example for testing batch processing.',
-    'page callback' => 'webform_batch_settings_form_display',
-    'access arguments' => array('access all webform results'),
-    'type' => MENU_NORMAL_ITEM,
+  return array(
+    'admin/settings/webform/batch' => array(
+      'title' => 'Webform Batch Settings',
+      'description' => 'Example for testing batch processing.',
+      'page callback' => 'webform_batch_settings_form_display',
+      'access arguments' => array('access all webform results'),
+      'type' => MENU_NORMAL_ITEM,
+    ),
+    'node/%webform_batch/batch' => array(
+      'title' => 'Export',
+      'description' => t('Choose random result'),
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('webform_batch_form', 1),
+      'access arguments' => array('access all webform results'),
+      'type' => MENU_LOCAL_TASK,
+      'weight' => 10,
+    ),
+    'admin/content/webform/batch' => array(
+      'title' => 'Webform Batches',
+      'description' => 'Example for testing batch processing.',
+      'page callback' => 'webform_batch_form_display',
+      'access arguments' => array('access all webform results'),
+      'type' => MENU_NORMAL_ITEM,
+    )
   );
-  $items['node/%webform_batch/batch'] = array(
-    'title' => 'Export',
-    'description' => t('Choose random result'),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('webform_batch_form', 1),
-    'access arguments' => array('access all webform results'),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 10,
-  );
-  $items['admin/content/webform/batch'] = array(
-    'title' => 'Webform Batches',
-    'description' => 'Example for testing batch processing.',
-    'page callback' => 'webform_batch_form_display',
-    'access arguments' => array('access all webform results'),
-    'type' => MENU_NORMAL_ITEM,
-  );
-  
-  return $items;
 }
-
 
 /**
  * Menu Callback: Contest Webform.
